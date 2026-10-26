@@ -108,18 +108,20 @@ export function OperarioScreen({ onRegister }: Props) {
           </div>
         </label>
 
-        {estado !== "sana" ? (
-          <label style={fieldStyle}>
-            <span style={labelStyle}>Detalle (ej: "mastitis en ubre izquierda delantera")</span>
-            <textarea
-              value={detalle}
-              onChange={(event) => setDetalle(event.target.value)}
-              rows={3}
-              placeholder="Describí la novedad"
-              style={{ ...inputStyle, resize: "vertical" }}
-            />
-          </label>
-        ) : null}
+        {/* Descripcion libre (26/10/2026, pedido explicito): siempre
+            visible, no solo cuando el estado no es "sana" -- para anotar
+            algo particular que no entra en los estados fijos (ej. "se
+            quebro el pie", "cojea de la pata trasera"). */}
+        <label style={fieldStyle}>
+          <span style={labelStyle}>Descripción (opcional)</span>
+          <textarea
+            value={detalle}
+            onChange={(event) => setDetalle(event.target.value)}
+            rows={3}
+            placeholder='Para anotar algo particular que no esté en los estados de arriba, ej: "se quebró el pie"'
+            style={{ ...inputStyle, resize: "vertical" }}
+          />
+        </label>
 
         <button type="submit" style={submitButtonStyle}>
           Registrar ordeñe
