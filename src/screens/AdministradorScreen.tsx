@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CaravanaSearch } from "../components/CaravanaSearch";
 import { EstadoPill } from "../components/EstadoPill";
 import { RendimientoChart } from "../components/RendimientoChart";
 import { isSameDay } from "../tambo.data";
@@ -9,12 +10,14 @@ type Props = {
   registros: RegistroOrdeñe[];
 };
 
-function formatHora(iso: string) {
-  return new Date(iso).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" });
+function formatFechaHora(iso: string) {
+  const date = new Date(iso);
+  const dia = isSameDay(iso, new Date()) ? "Hoy" : date.toLocaleDateString("es-UY", { weekday: "short", day: "2-digit", month: "2-digit" });
+  return `${dia} · ${date.toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-// Resumen del dia + grafica de rendimiento por vaca (29/10/2026, igual al
-// video) + movimientos de hoy.
+// Resumen del dia + buscador de caravana: al elegir una vaca se ve SOLO esa
+// vaca, su grafica de rendimiento y sus movimientos (29/10/2026).
 export function AdministradorScreen({ vacas, registros }: Props) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [caravana, setCaravana] = useState(vacas[0]?.caravana ?? "");
@@ -32,6 +35,15 @@ export function AdministradorScreen({ vacas, registros }: Props) {
   const vacasOrdeñadas = new Set(deHoy.map((item) => item.caravana)).size;
   const totalLitros = deHoy.reduce((sum, item) => sum + item.litros, 0);
   const conNovedad = deHoy.filter((item) => item.estado !== "sana").length;
+
+  const deLaVaca = registros
+    .filter((registro) => registro.caravana === caravana)
+    .sort((left, right) => new Date(right.fechaHoraIso).getTime() - new Date(left.fechaHoraIso).getTime());
+
+  function handleSelect(next: string) {
+    setCaravana(next);
+    setExpandedId(null);
+  }
 
   return (
     <div className="view-in" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 18 }}>
@@ -51,30 +63,20 @@ export function AdministradorScreen({ vacas, registros }: Props) {
       </div>
 
       <section style={panelStyle}>
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 14 }}>
-          {vacas.map((vaca) => (
-            <button
-              key={vaca.caravana}
-              type="button"
-              className={`state-chip${caravana === vaca.caravana ? " is-active" : ""}`}
-              style={{ flexShrink: 0 }}
-              onClick={() => setCaravana(vaca.caravana)}
-            >
-              {vaca.caravana}
-            </button>
-          ))}
+        <div style={{ marginBottom: 16 }}>
+          <CaravanaSearch vacas={vacas} value={caravana} onChange={handleSelect} />
         </div>
         {caravana ? <RendimientoChart caravana={caravana} registros={registros} /> : null}
       </section>
 
       <section>
-        <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Movimientos de hoy</h3>
+        <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Movimientos de la caravana {caravana}</h3>
 
-        {deHoy.length === 0 ? (
-          <div style={emptyStyle}>Todavía no hay ordeñes registrados hoy.</div>
+        {deLaVaca.length === 0 ? (
+          <div style={emptyStyle}>Todavía no hay movimientos de esta vaca.</div>
         ) : (
           <div style={{ display: "grid", gap: 8 }}>
-            {deHoy.map((registro) => {
+            {deLaVaca.map((registro) => {
               const isExpanded = expandedId === registro.id;
               return (
                 <article
@@ -84,9 +86,8 @@ export function AdministradorScreen({ vacas, registros }: Props) {
                 >
                   <div style={movementHeaderStyle}>
                     <span style={chevronStyle(isExpanded)}>›</span>
-                    <span style={{ fontWeight: 800, fontSize: 15 }}>Vaca {registro.caravana}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{formatFechaHora(registro.fechaHoraIso)}</span>
                     <span style={{ fontWeight: 800, color: "var(--gold-soft)" }}>{registro.litros.toFixed(1)} L</span>
-                    <span style={{ color: "var(--ink-soft)", fontSize: 13 }}>{formatHora(registro.fechaHoraIso)}</span>
                   </div>
 
                   {isExpanded ? (
@@ -173,7 +174,7 @@ const movementCardExpandedStyle: React.CSSProperties = {
 
 const movementHeaderStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "auto 1fr auto auto",
+  gridTemplateColumns: "auto 1fr auto",
   alignItems: "center",
   gap: 10
 };
