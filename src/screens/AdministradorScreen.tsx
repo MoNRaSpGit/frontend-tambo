@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { CaravanaSearch } from "../components/CaravanaSearch";
-import { EstadoPill } from "../components/EstadoPill";
 import { RendimientoChart } from "../components/RendimientoChart";
 import { isSameDay } from "../tambo.data";
 import type { RegistroOrdeñe, Vaca } from "../tambo.types";
@@ -34,7 +33,8 @@ export function AdministradorScreen({ vacas, registros }: Props) {
 
   const vacasOrdeñadas = new Set(deHoy.map((item) => item.caravana)).size;
   const totalLitros = deHoy.reduce((sum, item) => sum + item.litros, 0);
-  const conNovedad = deHoy.filter((item) => item.estado !== "sana").length;
+  // "Con novedad" (por Estado) se saco junto con el Estado (29/10/2026).
+  const promedio = vacasOrdeñadas > 0 ? totalLitros / vacasOrdeñadas : 0;
 
   const deLaVaca = registros
     .filter((registro) => registro.caravana === caravana)
@@ -57,8 +57,8 @@ export function AdministradorScreen({ vacas, registros }: Props) {
           <strong style={{ ...statValueStyle, color: "var(--gold-soft)" }}>{totalLitros.toFixed(1)}</strong>
         </div>
         <div style={statCardStyle}>
-          <span style={statLabelStyle}>Con novedad</span>
-          <strong style={{ ...statValueStyle, color: conNovedad > 0 ? "var(--red-soft)" : "var(--green-soft)" }}>{conNovedad}</strong>
+          <span style={statLabelStyle}>Promedio x vaca</span>
+          <strong style={{ ...statValueStyle, color: "var(--green-soft)" }}>{promedio.toFixed(1)}</strong>
         </div>
       </div>
 
@@ -92,16 +92,10 @@ export function AdministradorScreen({ vacas, registros }: Props) {
 
                   {isExpanded ? (
                     <div style={movementDetailStyle}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <EstadoPill estado={registro.estado} />
-                        {registro.edadAnios > 0 ? (
-                          <span style={{ color: "var(--ink-soft)", fontSize: 13, fontWeight: 700 }}>{registro.edadAnios} años</span>
-                        ) : null}
-                      </div>
                       <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{registro.detalle || "Sin observaciones."}</p>
                     </div>
                   ) : (
-                    <EstadoPill estado={registro.estado} />
+                    <p style={descPreviewStyle}>{registro.detalle || "Sin observaciones."}</p>
                   )}
                 </article>
               );
@@ -189,6 +183,15 @@ function chevronStyle(isOpen: boolean): React.CSSProperties {
     fontSize: 18
   };
 }
+
+const descPreviewStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13.5,
+  color: "var(--ink-soft)",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis"
+};
 
 const movementDetailStyle: React.CSSProperties = {
   display: "grid",

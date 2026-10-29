@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { isSameDay } from "../tambo.data";
-import type { EstadoVaca, RegistroOrdeñe, Vaca } from "../tambo.types";
-import { ESTADO_LABEL } from "../tambo.types";
+import type { RegistroOrdeñe, Vaca } from "../tambo.types";
 
 type Props = {
   vacas: Vaca[];
@@ -9,11 +8,10 @@ type Props = {
   onRegister: (registro: Omit<RegistroOrdeñe, "id">) => void;
 };
 
-const ESTADOS: EstadoVaca[] = ["sana", "mastitis", "tratamiento", "preñada", "cría"];
-
 // Registro de ordeñe como en el video (29/10/2026): lista de vacas por
-// caravana -> se toca una -> Litros, Estado y Descripcion -> Guardar
-// ("✓ Guardado" + cartel) y vuelve a la lista.
+// caravana -> se toca una -> Litros y Descripcion -> Guardar ("✓ Guardado"
+// + cartel) y vuelve a la lista. El Estado se saco de la app para hacerla
+// mas simple (pedido 29/10/2026; en el video SI queda): se guarda "sana".
 export function OperarioScreen({ vacas, registros, onRegister }: Props) {
   const [selected, setSelected] = useState<Vaca | null>(null);
   const [search, setSearch] = useState("");
@@ -90,7 +88,6 @@ type FormProps = {
 
 function RegistroForm({ vaca, onBack, onRegister, onSaved }: FormProps) {
   const [litros, setLitros] = useState("");
-  const [estado, setEstado] = useState<EstadoVaca>("sana");
   const [detalle, setDetalle] = useState("");
   const [saved, setSaved] = useState(false);
 
@@ -106,8 +103,8 @@ function RegistroForm({ vaca, onBack, onRegister, onSaved }: FormProps) {
       litros: Number(litrosValue.toFixed(1)),
       fechaHoraIso: new Date().toISOString(),
       edadAnios: vaca.edadAnios,
-      estado,
-      detalle: detalle.trim() || (estado === "sana" ? "Sin novedades." : "")
+      estado: "sana",
+      detalle: detalle.trim() || "Sin novedades."
     });
     setSaved(true);
     onSaved();
@@ -136,22 +133,6 @@ function RegistroForm({ vaca, onBack, onRegister, onSaved }: FormProps) {
           autoFocus
         />
       </label>
-
-      <div className="detail-row column">
-        <span className="detail-label">Estado</span>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {ESTADOS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={`state-chip${estado === item ? " is-active" : ""}`}
-              onClick={() => setEstado(item)}
-            >
-              {ESTADO_LABEL[item]}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Descripcion libre: para anotar algo que no entra en los estados
           fijos (ej. "se quebro el pie", "cojea de la pata trasera"). */}
