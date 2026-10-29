@@ -8,6 +8,14 @@ export const ESTADO_LABEL: Record<EstadoVaca, string> = {
   tratamiento: "En tratamiento"
 };
 
+export type Vaca = {
+  caravana: string;
+  raza: string;
+  lactancia: number;
+  edadAnios: number;
+  nota?: string;
+};
+
 export type RegistroOrdeñe = {
   id: number;
   caravana: string;

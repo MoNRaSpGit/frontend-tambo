@@ -1,200 +1,244 @@
-import { useState } from "react";
-import type { EstadoVaca, RegistroOrdeñe } from "../tambo.types";
+import { useMemo, useState } from "react";
+import { isSameDay } from "../tambo.data";
+import type { EstadoVaca, RegistroOrdeñe, Vaca } from "../tambo.types";
 import { ESTADO_LABEL } from "../tambo.types";
 
 type Props = {
+  vacas: Vaca[];
+  registros: RegistroOrdeñe[];
   onRegister: (registro: Omit<RegistroOrdeñe, "id">) => void;
 };
 
 const ESTADOS: EstadoVaca[] = ["sana", "mastitis", "tratamiento", "preñada", "cría"];
 
-export function OperarioScreen({ onRegister }: Props) {
-  const [caravana, setCaravana] = useState("");
-  const [litros, setLitros] = useState("");
-  const [edad, setEdad] = useState("");
-  const [estado, setEstado] = useState<EstadoVaca>("sana");
-  const [detalle, setDetalle] = useState("");
-  const [confirmacion, setConfirmacion] = useState<string | null>(null);
+// Registro de ordeñe como en el video (29/10/2026): lista de vacas por
+// caravana -> se toca una -> Litros, Estado y Descripcion -> Guardar
+// ("✓ Guardado" + cartel) y vuelve a la lista.
+export function OperarioScreen({ vacas, registros, onRegister }: Props) {
+  const [selected, setSelected] = useState<Vaca | null>(null);
+  const [search, setSearch] = useState("");
+  const [toast, setToast] = useState(false);
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-
-    const litrosValue = Number(litros);
-    if (!caravana.trim()) {
-      alert("Falta el numero de caravana.");
-      return;
+  const today = new Date();
+  const litrosHoy = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const registro of registros) {
+      if (!isSameDay(registro.fechaHoraIso, today)) continue;
+      map.set(registro.caravana, (map.get(registro.caravana) ?? 0) + registro.litros);
     }
-    if (!Number.isFinite(litrosValue) || litrosValue <= 0) {
-      alert("Escribe los litros ordeñados.");
-      return;
-    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registros]);
 
-    onRegister({
-      caravana: caravana.trim().toUpperCase(),
-      litros: Number(litrosValue.toFixed(1)),
-      fechaHoraIso: new Date().toISOString(),
-      edadAnios: edad ? Number(edad) : 0,
-      estado,
-      detalle: detalle.trim() || (estado === "sana" ? "Sin novedades." : "")
-    });
+  const filtered = vacas.filter((vaca) => vaca.caravana.toLowerCase().includes(search.trim().toLowerCase()));
 
-    setConfirmacion(`Registrado: vaca ${caravana.trim().toUpperCase()} - ${litrosValue} L`);
-    setCaravana("");
-    setLitros("");
-    setEdad("");
-    setEstado("sana");
-    setDetalle("");
-    window.setTimeout(() => setConfirmacion(null), 2500);
+  function handleSaved() {
+    setToast(true);
+    window.setTimeout(() => setToast(false), 2200);
+    window.setTimeout(() => setSelected(null), 1100);
   }
 
   return (
-    <section style={cardStyle}>
-      <h2 style={{ margin: 0, fontSize: 22, color: "#1f3a1c" }}>Registrar ordeñe</h2>
-      <p style={{ margin: "4px 0 18px", color: "#51664e" }}>Cargá la vaca, los litros y cualquier novedad de salud.</p>
-
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14 }}>
-        <label style={fieldStyle}>
-          <span style={labelStyle}>Número de caravana</span>
+    <section>
+      {selected ? (
+        <RegistroForm key={selected.caravana} vaca={selected} onBack={() => setSelected(null)} onRegister={onRegister} onSaved={handleSaved} />
+      ) : (
+        <div className="view-in" style={{ display: "grid", gap: 10 }}>
+          <div style={listLabelStyle}>Vacas (por caravana)</div>
           <input
-            type="text"
-            value={caravana}
-            onChange={(event) => setCaravana(event.target.value)}
-            placeholder="Ej: N1327"
-            style={inputStyle}
-            autoFocus
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar caravana…"
+            style={searchStyle}
           />
-        </label>
-
-        <label style={fieldStyle}>
-          <span style={labelStyle}>Litros ordeñados</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.1"
-            value={litros}
-            onChange={(event) => setLitros(event.target.value)}
-            placeholder="Ej: 12"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={fieldStyle}>
-          <span style={labelStyle}>Edad aproximada (años)</span>
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={edad}
-            onChange={(event) => setEdad(event.target.value)}
-            placeholder="Opcional"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={fieldStyle}>
-          <span style={labelStyle}>Estado de la vaca</span>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {ESTADOS.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setEstado(item)}
-                style={estado === item ? chipActiveStyle : chipStyle}
-              >
-                {ESTADO_LABEL[item]}
-              </button>
-            ))}
+          <div style={{ display: "grid", gap: 8 }}>
+            {filtered.map((vaca) => {
+              const litros = litrosHoy.get(vaca.caravana);
+              return (
+                <button key={vaca.caravana} type="button" className="cow-card" onClick={() => setSelected(vaca)}>
+                  <div style={avatarStyle}>{vaca.caravana.slice(-3)}</div>
+                  <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: 14.5, fontWeight: 700 }}>Caravana {vaca.caravana}</span>
+                    <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>
+                      {vaca.raza}
+                      {vaca.lactancia > 0 ? ` · ${vaca.lactancia}ª lactancia` : ""}
+                    </span>
+                  </div>
+                  {litros !== undefined ? (
+                    <span style={litersChipStyle}>{litros.toFixed(1)} L</span>
+                  ) : (
+                    <span style={pendingChipStyle}>Sin cargar</span>
+                  )}
+                </button>
+              );
+            })}
+            {filtered.length === 0 ? <div style={emptyStyle}>No hay vacas con esa caravana. Cargala en "Ganado".</div> : null}
           </div>
-        </label>
-
-        {/* Descripcion libre (26/10/2026, pedido explicito): siempre
-            visible, no solo cuando el estado no es "sana" -- para anotar
-            algo particular que no entra en los estados fijos (ej. "se
-            quebro el pie", "cojea de la pata trasera"). */}
-        <label style={fieldStyle}>
-          <span style={labelStyle}>Descripción (opcional)</span>
-          <textarea
-            value={detalle}
-            onChange={(event) => setDetalle(event.target.value)}
-            rows={3}
-            placeholder='Para anotar algo particular que no esté en los estados de arriba, ej: "se quebró el pie"'
-            style={{ ...inputStyle, resize: "vertical" }}
-          />
-        </label>
-
-        <button type="submit" style={submitButtonStyle}>
-          Registrar ordeñe
-        </button>
-
-        {confirmacion ? <p style={confirmStyle}>{confirmacion}</p> : null}
-      </form>
+        </div>
+      )}
+      {toast ? <div className="saved-toast">✓ Datos del animal guardados</div> : null}
     </section>
   );
 }
 
-const cardStyle: React.CSSProperties = {
-  maxWidth: 480,
-  margin: "0 auto",
-  padding: 20,
-  borderRadius: 20,
-  background: "#ffffff",
-  border: "1px solid #d9e6d4",
-  boxShadow: "0 16px 32px rgba(35, 70, 30, 0.08)"
+type FormProps = {
+  vaca: Vaca;
+  onBack: () => void;
+  onRegister: Props["onRegister"];
+  onSaved: () => void;
 };
 
-const fieldStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 6
+function RegistroForm({ vaca, onBack, onRegister, onSaved }: FormProps) {
+  const [litros, setLitros] = useState("");
+  const [estado, setEstado] = useState<EstadoVaca>("sana");
+  const [detalle, setDetalle] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  function handleSave() {
+    if (saved) return;
+    const litrosValue = Number(litros.replace(",", "."));
+    if (!Number.isFinite(litrosValue) || litrosValue <= 0) {
+      alert("Escribí los litros ordeñados.");
+      return;
+    }
+    onRegister({
+      caravana: vaca.caravana,
+      litros: Number(litrosValue.toFixed(1)),
+      fechaHoraIso: new Date().toISOString(),
+      edadAnios: vaca.edadAnios,
+      estado,
+      detalle: detalle.trim() || (estado === "sana" ? "Sin novedades." : "")
+    });
+    setSaved(true);
+    onSaved();
+  }
+
+  return (
+    <div className="view-in" style={{ display: "grid", gap: 9 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+        <button type="button" onClick={onBack} style={backStyle} aria-label="Volver">
+          ←
+        </button>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>Caravana {vaca.caravana}</span>
+          <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Registro de hoy</span>
+        </div>
+      </div>
+
+      <label className="detail-row">
+        <span className="detail-label">Litros</span>
+        <input
+          className="detail-input liters"
+          inputMode="decimal"
+          value={litros}
+          onChange={(event) => setLitros(event.target.value.replace(/[^0-9.,]/g, ""))}
+          placeholder="0.0 L"
+          autoFocus
+        />
+      </label>
+
+      <div className="detail-row column">
+        <span className="detail-label">Estado</span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {ESTADOS.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={`state-chip${estado === item ? " is-active" : ""}`}
+              onClick={() => setEstado(item)}
+            >
+              {ESTADO_LABEL[item]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Descripcion libre: para anotar algo que no entra en los estados
+          fijos (ej. "se quebro el pie", "cojea de la pata trasera"). */}
+      <label className="detail-row column">
+        <span className="detail-label">Descripción</span>
+        <textarea
+          className="detail-textarea"
+          value={detalle}
+          onChange={(event) => setDetalle(event.target.value)}
+          rows={3}
+          placeholder="Ej: Animal en buen estado, come bien."
+        />
+      </label>
+
+      <button type="button" className={`save-btn${saved ? " is-saved" : ""}`} style={{ marginTop: 8 }} onClick={handleSave}>
+        {saved ? "✓ Guardado" : "Guardar"}
+      </button>
+    </div>
+  );
+}
+
+const listLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  letterSpacing: "0.1em",
+  textTransform: "uppercase",
+  color: "var(--green-soft)",
+  margin: "2px 0 0 2px"
 };
 
-const labelStyle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 700,
-  color: "#3a4f37"
+const searchStyle: React.CSSProperties = {
+  minHeight: 44,
+  padding: "10px 14px",
+  borderRadius: 13,
+  border: "1px solid var(--line)",
+  background: "var(--card)",
+  color: "var(--ink)",
+  fontSize: 15,
+  outline: "none"
 };
 
-const inputStyle: React.CSSProperties = {
-  minHeight: 46,
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid #c7d8c1",
-  fontSize: 16,
-  background: "#f8fbf6"
-};
-
-const chipStyle: React.CSSProperties = {
-  padding: "8px 14px",
-  borderRadius: 999,
-  border: "1px solid #c7d8c1",
-  background: "#f3f8f1",
-  color: "#3a4f37",
-  fontWeight: 700,
-  cursor: "pointer"
-};
-
-const chipActiveStyle: React.CSSProperties = {
-  ...chipStyle,
-  border: "1px solid #2f5e2a",
-  background: "#2f5e2a",
-  color: "#f3f8f1"
-};
-
-const submitButtonStyle: React.CSSProperties = {
-  minHeight: 50,
-  borderRadius: 14,
-  border: "none",
-  background: "#2f5e2a",
-  color: "#f3f8f1",
-  fontSize: 16,
+const avatarStyle: React.CSSProperties = {
+  width: 38,
+  height: 38,
+  borderRadius: "50%",
+  background: "var(--green-soft)",
+  color: "var(--panel)",
+  fontSize: 12.5,
   fontWeight: 800,
-  cursor: "pointer",
-  boxShadow: "0 12px 22px rgba(47, 94, 42, 0.26)"
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0
 };
 
-const confirmStyle: React.CSSProperties = {
-  margin: 0,
-  textAlign: "center",
-  color: "#235c1f",
-  fontWeight: 700
+const litersChipStyle: React.CSSProperties = {
+  fontSize: 12.5,
+  fontWeight: 700,
+  color: "var(--gold-soft)",
+  padding: "5px 10px",
+  borderRadius: 999,
+  background: "rgba(217,165,43,.12)",
+  whiteSpace: "nowrap"
+};
+
+const pendingChipStyle: React.CSSProperties = {
+  ...litersChipStyle,
+  color: "var(--ink-soft)",
+  background: "rgba(238,243,234,.06)",
+  fontWeight: 600
+};
+
+const backStyle: React.CSSProperties = {
+  width: 34,
+  height: 34,
+  borderRadius: "50%",
+  border: 0,
+  background: "rgba(238,243,234,.08)",
+  color: "var(--ink)",
+  fontSize: 16,
+  cursor: "pointer",
+  flexShrink: 0
+};
+
+const emptyStyle: React.CSSProperties = {
+  padding: 16,
+  borderRadius: 14,
+  border: "1px dashed var(--line)",
+  color: "var(--ink-soft)",
+  textAlign: "center"
 };

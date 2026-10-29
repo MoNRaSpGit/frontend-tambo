@@ -1,12 +1,13 @@
 import type { EstadoVaca } from "../tambo.types";
 import { ESTADO_LABEL } from "../tambo.types";
 
+// Colores para el tema oscuro (verde/dorado, igual al video de El Tambo).
 const COLORS: Record<EstadoVaca, { bg: string; fg: string }> = {
-  sana: { bg: "#dff3dc", fg: "#235c1f" },
-  mastitis: { bg: "#fbdede", fg: "#8a2222" },
-  tratamiento: { bg: "#fdecc8", fg: "#8a5a10" },
-  "preñada": { bg: "#dde8fb", fg: "#1f3f8a" },
-  "cría": { bg: "#e6ddf7", fg: "#4a2b8a" }
+  sana: { bg: "rgba(143,209,166,.14)", fg: "#8fd1a6" },
+  mastitis: { bg: "rgba(240,128,128,.15)", fg: "#f2a0a0" },
+  tratamiento: { bg: "rgba(236,207,134,.15)", fg: "#eccf86" },
+  "preñada": { bg: "rgba(140,175,240,.15)", fg: "#a9c3f5" },
+  "cría": { bg: "rgba(190,160,240,.15)", fg: "#c9b3f2" }
 };
 
 export function EstadoPill({ estado }: { estado: EstadoVaca }) {
@@ -15,13 +16,15 @@ export function EstadoPill({ estado }: { estado: EstadoVaca }) {
     <span
       style={{
         display: "inline-flex",
+        justifySelf: "start",
         alignItems: "center",
-        padding: "4px 10px",
+        padding: "4px 11px",
         borderRadius: 999,
         background: bg,
         color: fg,
-        fontSize: 12,
-        fontWeight: 800
+        fontSize: 12.5,
+        fontWeight: 700,
+        whiteSpace: "nowrap"
       }}
     >
       {ESTADO_LABEL[estado]}

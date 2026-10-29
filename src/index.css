@@ -1,5 +1,17 @@
+/* Tema oscuro verde/dorado, igual al video de El Tambo (29/10/2026). */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  --panel: #0f1a13;
+  --panel-2: #132019;
+  --ink: #eef3ea;
+  --ink-soft: rgba(238, 243, 234, 0.55);
+  --line: rgba(238, 243, 234, 0.08);
+  --card: rgba(238, 243, 234, 0.04);
+  --gold: #d9a52b;
+  --gold-soft: #eccf86;
+  --green: #4f9d6e;
+  --green-soft: #8fd1a6;
+  --red-soft: #f2a0a0;
 }
 
 * {
@@ -9,10 +21,240 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: linear-gradient(180deg, #f3f8f1 0%, #e7f0e3 100%);
-  color: #233322;
+  background: var(--panel);
+  color: var(--ink);
 }
 
-button {
+button,
+input,
+textarea {
   font-family: inherit;
+}
+
+/* ---- Tarjetas de vaca (lista del Operario) ---- */
+.cow-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.cow-card:active {
+  transform: scale(0.97);
+  background: rgba(79, 157, 110, 0.14);
+  box-shadow: 0 0 0 1.5px var(--green-soft);
+}
+
+/* ---- Formulario del registro ---- */
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background: rgba(238, 243, 234, 0.035);
+  border: 1px solid var(--line);
+  transition: border-color 0.2s ease;
+}
+.detail-row:focus-within {
+  border-color: rgba(143, 209, 166, 0.7);
+}
+.detail-row.column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.detail-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.detail-input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: right;
+}
+.detail-input.liters {
+  color: var(--gold-soft);
+}
+.detail-textarea {
+  width: 100%;
+  min-height: 70px;
+  padding: 9px 11px;
+  border: 0;
+  outline: none;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.45;
+  resize: vertical;
+}
+.state-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.state-chip.is-active {
+  border-color: transparent;
+  background: rgba(143, 209, 166, 0.14);
+  color: var(--green-soft);
+}
+
+.save-btn {
+  min-height: 50px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--gold);
+  color: var(--panel);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.25s ease, color 0.25s ease;
+}
+.save-btn:active {
+  transform: scale(0.95);
+}
+.save-btn.is-saved {
+  background: var(--green);
+  color: #fff;
+}
+
+.saved-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #1b3326;
+  border: 1px solid rgba(143, 209, 166, 0.5);
+  color: var(--green-soft);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  animation: toast-in 0.3s ease;
+  z-index: 10;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.view-in {
+  animation: view-in 0.3s ease;
+}
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateX(5%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ---- Grafica de rendimiento (Administrador) ---- */
+.chart-bar {
+  position: absolute;
+  bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--green-soft), var(--green));
+  transform-origin: bottom;
+  animation: bar-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.chart-bar.is-last {
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.chart-value {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-soft);
+  white-space: nowrap;
+  animation: fade-in 0.3s ease both;
+}
+.chart-trend {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  animation: trend-draw 1.1s ease-out both;
+}
+@keyframes trend-draw {
+  from {
+    clip-path: inset(-40px 100% -40px 0);
+  }
+  to {
+    clip-path: inset(-40px 0 -40px 0);
+  }
+}
+.chart-badge {
+  animation: badge-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes badge-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar,
+  .chart-value,
+  .chart-trend,
+  .chart-badge,
+  .view-in,
+  .saved-toast {
+    animation: none;
+  }
 }
